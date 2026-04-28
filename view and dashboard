@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HR Dashboard</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <h1>🏢 HR Dashboard</h1>
+      <a href="/logout" class="btn btn-secondary">Logout</a>
+    </header>
+
+    <div class="dashboard-content">
+      <div class="sidebar">
+        <button class="tab-btn active" onclick="switchTab('candidates')">👥 Candidates</button>
+        <button class="tab-btn" onclick="switchTab('interviews')">📋 Interviews</button>
+        <button class="tab-btn" onclick="switchTab('onboarding')">✅ Onboarding</button>
+        <button class="tab-btn" onclick="switchTab('add-candidate')">➕ Add Candidate</button>
+      </div>
+
+      <div class="main-content">
+        <!-- Candidates Tab -->
+        <div id="candidates" class="tab-content active">
+          <h2>Candidates</h2>
+          <div class="candidates-grid">
+            <% candidates.forEach(candidate => { %>
+              <div class="candidate-card">
+                <h3><a href="/candidate/<%= candidate.id %>"><%= candidate.name %></a></h3>
+                <p><strong>Position:</strong> <%= candidate.position %></p>
+                <p><strong>Email:</strong> <a href="mailto:<%= candidate.email %>"><%= candidate.email %></a></p>
+                <p><strong>Phone:</strong> <%= candidate.phone %></p>
+                <p><strong>Status:</strong> <span class="status <%= candidate.status.toLowerCase() %>"><%= candidate.status %></span></p>
+                <p><strong>Applied:</strong> <%= new Date(candidate.applied_date).toLocaleDateString() %></p>
+                <% if (candidate.resume_file) { %>
+                  <p><a href="/download-resume/<%= candidate.resume_file %>" class="btn btn-small">📄 Download Resume</a></p>
+                <% } %>
+                <a href="/candidate/<%= candidate.id %>" class="btn btn-primary">View Details</a>
+              </div>
+            <% }); %>
+          </div>
+        </div>
+
+        <!-- Add Candidate Tab -->
+        <div id="add-candidate" class="tab-content">
+          <h2>Add New Candidate</h2>
+          <form id="addCandidateForm" class="form-container">
+            <div class="form-group">
+              <label for="name">Name *</label>
+              <input type="text" id="name" name="name" required>
+            </div>
+            
+            <div class="form-group">
+              <label for="email">Email *</label>
+              <input type="email" id="email" name="email" required>
+            </div>
+            
+            <div class="form-group">
+              <label for="phone">Phone</label>
+              <input type="tel" id="phone" name="phone">
+            </div>
+            
+            <div class="form-group">
+              <label for="position">Position *</label>
+              <input type="text" id="position" name="position" required>
+            </div>
+            
+            <div class="form-group">
+              <label for="resume">Resume (PDF/DOC)</label>
+              <input type="file" id="resume" name="resume" accept=".pdf,.doc,.docx">
+            </div>
+            
+            <div class="form-group">
+              <label for="notes">Notes</label>
+              <textarea id="notes" name="notes" rows="4"></textarea>
+            </div>
+            
+            <button type="submit" class="btn btn-primary">Add Candidate</button>
+          </form>
+        </div>
+
+        <!-- Interviews Tab -->
+        <div id="interviews" class="tab-content">
+          <h2>Interviews Overview</h2>
+          <p>View interviews from candidate detail pages</p>
+        </div>
+
+        <!-- Onboarding Tab -->
+        <div id="onboarding" class="tab-content">
+          <h2>Onboarding Overview</h2>
+          <p>View onboarding tasks from candidate detail pages</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function switchTab(tabName) {
+      const tabs = document.querySelectorAll('.tab-content');
+      const btns = document.querySelectorAll('.tab-btn');
+      
+      tabs.forEach(tab => tab.classList.remove('active'));
+      btns.forEach(btn => btn.classList.remove('active'));
+      
+      document.getElementById(tabName).classList.add('active');
+      event.target.classList.add('active');
+    }
+
+    document.getElementById('addCandidateForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const formData = new FormData(e.target);
+      
+      try {
+        const response = await fetch('/candidate/add', {
+          method: 'POST',
+          body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          alert('Candidate added successfully!');
+          location.reload();
+        } else {
+          alert('Error: ' + data.error);
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        alert('An error occurred');
+      }
+    });
+  </script>
+</body>
+</html>
