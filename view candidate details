@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= candidate.name %> - HR Dashboard</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <a href="/dashboard" class="btn btn-secondary">← Back to Dashboard</a>
+      <h1><%= candidate.name %></h1>
+      <a href="/logout" class="btn btn-secondary">Logout</a>
+    </header>
+
+    <div class="candidate-detail">
+      <!-- Candidate Info -->
+      <div class="info-section">
+        <h2>Candidate Information</h2>
+        <div class="info-grid">
+          <div>
+            <strong>Email:</strong>
+            <p><a href="mailto:<%= candidate.email %>"><%= candidate.email %></a></p>
+          </div>
+          <div>
+            <strong>Phone:</strong>
+            <p><%= candidate.phone || 'N/A' %></p>
+          </div>
+          <div>
+            <strong>Position Applied:</strong>
+            <p><%= candidate.position %></p>
+          </div>
+          <div>
+            <strong>Applied Date:</strong>
+            <p><%= new Date(candidate.applied_date).toLocaleDateString() %></p>
+          </div>
+        </div>
+
+        <!-- Status Update -->
+        <div class="form-group">
+          <label for="status"><strong>Candidate Status</strong></label>
+          <select id="status" onchange="updateStatus(<%= candidate.id %>, this.value)">
+            <option value="Applied" <%= candidate.status === 'Applied' ? 'selected' : '' %>>Applied</option>
+            <option value="Screening" <%= candidate.status === 'Screening' ? 'selected' : '' %>>Screening</option>
+            <option value="Interview" <%= candidate.status === 'Interview' ? 'selected' : '' %>>Interview</option>
+            <option value="Selected" <%= candidate.status === 'Selected' ? 'selected' : '' %>>Selected</option>
+            <option value="Rejected" <%= candidate.status === 'Rejected' ? 'selected' : '' %>>Rejected</option>
+            <option value="Onboarding" <%= candidate.status === 'Onboarding' ? 'selected' : '' %>>Onboarding</option>
+            <option value="Hired" <%= candidate.status === 'Hired' ? 'selected' : '' %>>Hired</option>
+          </select>
+        </div>
+
+        <!-- Resume -->
+        <% if (candidate.resume_file) { %>
+          <p><a href="/download-resume/<%= candidate.resume_file %>" class="btn btn-primary">📄 Download Resume</a></p>
+        <% } %>
+
+        <!-- Notes -->
+        <div class="form-group">
+          <label for="notes"><strong>Notes</strong></label>
+          <textarea id="notes" rows="4" onblur="updateNotes(<%= candidate.id %>, this.value)"><%= candidate.notes || '' %></textarea>
+        </div>
+      </div>
+
+      <!-- Interviews Section -->
+      <div class="info-section">
+        <h2>Interviews</h2>
+        <% if (interviews && interviews.length > 0) { %>
+          <div class="interviews-list">
+            <% interviews.forEach(interview => { %>
+              <div class="interview-item">
+                <h4><%= interview.interview_type %></h4>
+                <p><strong>Date:</strong> <%= new Date(interview.interview_date).toLocaleDateString() %></p>
+                <p><strong>Interviewer:</strong> <%= interview.interviewer %></p>
+                <p><strong>Rating:</strong> <%= interview.rating %>/5 ⭐</p>
+                <p><strong>Feedback:</strong> <%= interview.feedback %></p>
+              </div>
+            <% }); %>
+          </div>
+        <% } else { %>
+          <p>No interviews scheduled yet</p>
+        <% } %>
+
+        <h3>Add Interview</h3>
+        <form id="addInterviewForm" class="form-container">
+          <div class="form-group">
+            <label for="interview_date">Interview Date *</label>
+            <input type="datetime-local" id="interview_date" name="interview_date" required>
+          </div>
+          
+          <div class="form-group">
+            <label for="interview_type">Interview Type *</label>
+            <select id="interview_type" name="interview_type" required>
+              <option value="">Select Type</option>
+              <option value="Phone Screening">Phone Screening</option>
+              <option value="Technical">Technical</option>
+              <option value="HR">HR Round</option>
+              <option value="Final">Final Round</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label for="interviewer">Interviewer Name *</label>
+            <input type="text" id="interviewer" name="interviewer" required placeholder="Who is conducting the interview?">
+          </div>
+          
+          <div class="form-group">
+            <label for="rating">Rating (1-5)</label>
+            <input type="number" id="rating" name="rating" min="1" max="5">
+          </div>
+          
+          <div class="form-group">
+            <label for="feedback">Feedback</label>
+            <textarea id="feedback" name="feedback" rows="3" placeholder="Interview feedback..."></textarea>
+          </div>
+          
+          <button type="submit" class="btn btn-primary">Add Interview</button>
+        </form>
+      </div>
+
+      <!-- Onboarding Section -->
+      <div class="info-section">
+        <h2>Onboarding Tasks</h2>
+        <% if (onboarding && onboarding.length > 0) { %>
+          <div class="onboarding-list">
+            <% onboarding.forEach(task => { %>
+              <div class="task-item">
+                <h4><%= task.task %></h4>
+                <p><strong>Status:</strong> 
+                  <select onchange="updateTaskStatus(<%= task.id %>, this.value)">
+                    <option value="Pending" <%= task.status === 'Pending' ? 'selected' : '' %>>Pending</option>
+                    <option value="In Progress" <%= task.status === 'In Progress' ? 'selected' : '' %>>In Progress</option>
+                    <option value="Completed" <%= task.status === 'Completed' ? 'selected' : '' %>>Completed</option>
+                  </select>
+                </p>
+                <p><strong>Assigned To:</strong> <%= task.assigned_to %></p>
+                <p><strong>Due Date:</strong> <%= new Date(task.due_date).toLocaleDateString() %></p>
+              </div>
+            <% }); %>
+          </div>
+        <% } else { %>
+          <p>No onboarding tasks yet</p>
+        <% } %>
+
+        <h3>Add Onboarding Task</h3>
+        <form id="addOnboardingForm" class="form-container">
+          <div class="form-group">
+            <label for="task">Task *</label>
+            <input type="text" id="task" name="task" required placeholder="e.g., IT Setup, Training Session">
+          </div>
+          
+          <div class="form-group">
+            <label for="assigned_to">Assigned To *</label>
+            <input type="text" id="assigned_to" name="assigned_to" required placeholder="Team member name">
+          </div>
+          
+          <div class="form-group">
+            <label for="due_date">Due Date *</label>
+            <input type="date" id="due_date" name="due_date" required>
+          </div>
+          
+          <button type="submit" class="btn btn-primary">Add Task</button>
+        </form>
+      </div>
+
+      <!-- Activity Log Section -->
+      <div class="info-section">
+        <h2>Activity Log</h2>
+        <% if (actions && actions.length > 0) { %>
+          <div class="activity-log">
+            <% actions.forEach(action => { %>
+              <div class="activity-item">
+                <p><strong><%= action.action_type %>:</strong> <%= action.description %></p>
+                <small><%= new Date(action.created_at).toLocaleString() %></small>
+              </div>
+            <% }); %>
+          </div>
+        <% } else { %>
+          <p>No activities yet</p>
+        <% } %>
+
+        <h3>Add Custom Action</h3>
+        <form id="addActionForm" class="form-container">
+          <div class="form-group">
+            <label for="action_type">Action Type *</label>
+            <select id="action_type" name="action_type" required>
+              <option value="">Select Action Type</option>
+              <option value="Email Sent">Email Sent</option>
+              <option value="Follow-up">Follow-up</option>
+              <option value="Document Request">Document Request</option>
+              <option value="Background Check">Background Check</option>
+              <option value="Offer Extended">Offer Extended</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label for="description">Description *</label>
+            <textarea id="description" name="description" rows="3" required placeholder="Action details..."></textarea>
+          </div>
+          
+          <button type="submit" class="btn btn-primary">Add Action</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const candidateId = <%= candidate.id %>;
+
+    function updateStatus(candidateId, status) {
+      fetch(`/candidate/${candidateId}/status`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status })
+      }).then(res => res.json()).then(data => {
+        if (data.success) alert('Status updated!');
+      });
+    }
+
+    function updateNotes(candidateId, notes) {
+      fetch(`/candidate/${candidateId}/notes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ notes })
+      }).then(res => res.json()).then(data => {
+        if (data.success) alert('Notes saved!');
+      });
+    }
+
+    function updateTaskStatus(taskId, status) {
+      fetch(`/onboarding/${taskId}/status`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status })
+      }).then(res => res.json()).then(data => {
+        if (data.success) alert('Task status updated!');
+      });
+    }
+
+    document.getElementById('addInterviewForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData(e.target);
+      const data = {
+        candidate_id: candidateId,
+        interview_date: formData.get('interview_date'),
+        interview_type: formData.get('interview_type'),
+        interviewer: formData.get('interviewer'),
+        rating: formData.get('rating') || null,
+        feedback: formData.get('feedback')
+      };
+      
+      fetch('/interview/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      }).then(res => res.json()).then(data => {
+        if (data.success) {
+          alert('Interview added!');
+          location.reload();
+        }
+      });
+    });
+
+    document.getElementById('addOnboardingForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData(e.target);
+      const data = {
+        candidate_id: candidateId,
+        task: formData.get('task'),
+        assigned_to: formData.get('assigned_to'),
+        due_date: formData.get('due_date')
+      };
+      
+      fetch('/onboarding/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      }).then(res => res.json()).then(data => {
+        if (data.success) {
+          alert('Onboarding task added!');
+          location.reload();
+        }
+      });
+    });
+
+    document.getElementById('addActionForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData(e.target);
+      const data = {
+        candidate_id: candidateId,
+        action_type: formData.get('action_type'),
+        description: formData.get('description')
+      };
+      
+      fetch('/action/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      }).then(res => res.json()).then(data => {
+        if (data.success) {
+          alert('Action logged!');
+          location.reload();
+        }
+      });
+    });
+  </script>
+</body>
+</html>
