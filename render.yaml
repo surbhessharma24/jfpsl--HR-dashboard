@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: hr-dashboard
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PASSWORD
+        value: admin123
+      - key: PORT
+        value: 3000
